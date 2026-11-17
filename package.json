@@ -1,0 +1,18 @@
+{
+  "name": "solarflow-pro",
+  "version": "2.6.0",
+  "description": "SolarFlow Pro - Ingenier\u00eda y Gesti\u00f3n de Obras FV",
+  "main": "index.js",
+  "scripts": {
+    "sync": "npx cap sync android",
+    "build:debug": "npx cap sync android && cd android && ./gradlew assembleDebug",
+    "build:release": "npx cap sync android && cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}
