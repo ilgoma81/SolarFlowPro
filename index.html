@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SolarFlow Pro — Ingeniería y Gestión de Obras FV</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter y JetBrains Mono para datos técnicos -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome para iconografía técnica -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            solar: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Estilos de impresión para el informe técnico-comercial */
+    @media print {
+      body { background: white !important; color: black !important; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      .print-card { border: 1px solid #cbd5e1 !important; background: #f8fafc !important; color: #0f172a !important; box-shadow: none !important; }
+      .print-text-dark { color: #0f172a !important; }
+    }
+    /* Scrollbars limpios */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- BARRA SUPERIOR / HEADER -->
+  <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20">
+          <i class="fa-solid fa-solar-panel text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">SolarFlow <span class="text-amber-400">Pro</span></h1>
+            <span class="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">v2.6 IDAE/AEAT</span>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Dimensionamiento Fotovoltaico · Normativa PCT-C-REV · Deducción IRPF</p>
+        </div>
+      </div>
+
+      <!-- Controles globales -->
+      <div class="flex items-center gap-2">
+        <button onclick="openSaveModal()" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold flex items-center gap-2 transition shadow-sm">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Guardar Obra</span>
+        </button>
+        <button onclick="switchTab('tab-report')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-semibold flex items-center gap-2 transition">
+          <i class="fa-solid fa-file-invoice"></i>
+          <span class="hidden md:inline">Informe Cliente</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- NAVEGACIÓN POR PESTAÑAS -->
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 flex overflow-x-auto gap-1 border-t border-slate-800/80 pt-1">
+      <button id="btn-tab-calc" onclick="switchTab('tab-calc')" class="tab-btn active px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-amber-400 text-amber-400 whitespace-nowrap flex items-center gap-2 transition">
+        <i class="fa-solid fa-calculator"></i> 1. Calculadora de Obra (Excel FV)
+      </button>
+      <button id="btn-tab-idae" onclick="switchTab('tab-idae')" class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap flex items-center gap-2 transition">
+        <i class="fa-solid fa-compass-drafting"></i> 2. Normativa IDAE y Sombras
+      </button>
+      <button id="btn-tab-irpf" onclick="switchTab('tab-irpf')" class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap flex items-center gap-2 transition">
+        <i class="fa-solid fa-landmark"></i> 3. Deducción IRPF (40% AEAT)
+      </button>
+      <button id="btn-tab-report" onclick="switchTab('tab-report')" class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap flex items-center gap-2 transition">
+        <i class="fa-solid fa-folder-open"></i> 4. Obras Guardadas e Informe
+        <span id="saved-count-badge" class="ml-1 px-1.5 py-0.2 text-[10px] rounded-full bg-slate-800 text-slate-300 font-mono">0</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- ===================================================================== -->
+    <!-- PESTAÑA 1: CALCULADORA DE OBRA (DIMENSIONAMIENTO FV EXACTA EXCEL)     -->
+    <!-- ===================================================================== -->
+    <section id="tab-calc" class="tab-content space-y-6">
+      
+      <!-- Barra de Presets Rápidos de Obra -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-400 block">Configuraciones Predefinidas (Manuales Técnicos)</span>
+          <p class="text-xs text-slate-400">Carga al instante los datos de catálogo de los casos de estudio o edita cualquier parámetro libremente.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="applyPreset('jasolar')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-amber-500/20 hover:border-amber-500/50 border border-slate-700 text-xs font-medium text-slate-200 transition text-left">
+            <div class="font-bold text-amber-400">Caso 1: JA Solar 450W + SMA SB 4.0</div>
+            <div class="text-[11px] text-slate-400">Elche · β=15° · α=18° · 5.424 kWh/año</div>
+          </button>
+          <button onclick="applyPreset('aiko')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-amber-500/20 hover:border-amber-500/50 border border-slate-700 text-xs font-medium text-slate-200 transition text-left">
+            <div class="font-bold text-amber-400">Caso 2: Aiko 620W Tipo N + Einsolar 5V</div>
+            <div class="text-[11px] text-slate-400">Elche · β=20° · α=-10° · 8.448 kWh/año</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- COLUMNA IZQUIERDA: ENTRADAS DE DATOS (7 columnas) -->
+        <div class="lg:col-span-7 space-y-6">
+          
+          <!-- BLOQUE A: CONSUMO Y UBICACIÓN -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <h2 class="text-sm font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                <i class="fa-solid fa-location-dot"></i> A. Datos de Consumo y Ubicación
+              </h2>
+              <button onclick="toggleInvoiceHelper()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition">
+                <i class="fa-solid fa-receipt mr-1"></i> Sumar Facturas P1/P2/P3
+              </button>
+            </div>
+
+            <!-- Asistente opcional para sumar facturas -->
+            <div id="invoice-helper" class="hidden mb-4 p-3.5 rounded-lg bg-slate-950 border border-amber-500/30 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-amber-400">Calculadora de Consumo Anual desde Facturas</span>
+                <button onclick="toggleInvoiceHelper()" class="text-slate-400 hover:text-white text-xs"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <p class="text-[11px] text-slate-400">Introduce el consumo acumulado de tus facturas (Punta P1 + Llano P2 + Valle P3) y el número de facturas disponibles para extrapolar a 12 meses si falta alguna.</p>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Suma P1 (kWh)</label>
+                  <input type="number" id="inv-p1" value="1626" oninput="calcFromInvoices()" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs font-mono text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Suma P2 (kWh)</label>
+                  <input type="number" id="inv-p2" value="1322" oninput="calcFromInvoices()" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs font-mono text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Suma P3 (kWh)</label>
+                  <input type="number" id="inv-p3" value="2024" oninput="calcFromInvoices()" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs font-mono text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Nº Meses/Facturas</label>
+                  <input type="number" id="inv-months" value="11" min="1" max="12" oninput="calcFromInvoices()" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs font-mono text-white">
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-1">
+                <span class="text-xs text-slate-300">Acumulado: <strong id="inv-sum" class="font-mono text-white">4.972 kWh</strong> · Anualizado (12m): <strong id="inv-annual" class="font-mono text-amber-400">5.424 kWh</strong></span>
+                <button onclick="applyInvoiceToMain()" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition">Aplicar Consumo</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Consumo Anual Cliente (kWh/año)</label>
+                <input type="number" id="consumoAnual" value="5424" step="1" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-lg px-3 py-2 text-sm font-mono text-white outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Irradiación Horizontal Gd(0) [HSP]</label>
+                <div class="flex gap-1.5">
+                  <input type="number" id="gd0" value="5.05" step="0.01" oninput="recalculateAll()" class="w-24 bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-lg px-2.5 py-2 text-sm font-mono text-white outline-none">
+                  <select id="citySelector" onchange="selectCityRadiation()" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-300 outline-none">
+                    <option value="5.05" selected>Alicante / Elche (5,05)</option>
+                    <option value="5.12">Murcia (5,12)</option>
+                    <option value="4.85">Valencia (4,85)</option>
+                    <option value="4.65">Madrid (4,65)</option>
+                    <option value="5.28">Sevilla (5,28)</option>
+                    <option value="4.52">Barcelona (4,52)</option>
+                    <option value="3.78">Bilbao (3,78)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Latitud Sexagesimal -> Decimal -->
+              <div class="sm:col-span-2 bg-slate-950/70 p-3 rounded-lg border border-slate-800">
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-medium text-slate-300">Latitud del Emplazamiento (Grados · Minutos · Segundos)</label>
+                  <span class="text-xs font-mono text-amber-400">Lat. Decimal: <strong id="latDecimalDisplay">38,143°</strong></span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="relative">
+                    <input type="number" id="latDeg" value="38" step="1" oninput="recalculateAll()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono text-white">
+                    <span class="absolute right-2.5 top-1.5 text-xs text-slate-500">°</span>
+                  </div>
+                  <div class="relative">
+                    <input type="number" id="latMin" value="8" step="1" oninput="recalculateAll()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono text-white">
+                    <span class="absolute right-2.5 top-1.5 text-xs text-slate-500">'</span>
+                  </div>
+                  <div class="relative">
+                    <input type="number" id="latSec" value="34.3" step="0.1" oninput="recalculateAll()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono text-white">
+                    <span class="absolute right-2.5 top-1.5 text-xs text-slate-500">"</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Inclinación Paneles β (°)</label>
+                <input type="number" id="beta" value="15" step="1" min="0" max="90" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-lg px-3 py-2 text-sm font-mono text-white outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Acimut α (°) [0°=Sur, -E, +O]</label>
+                <input type="number" id="acimut" value="18" step="1" min="-180" max="180" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-lg px-3 py-2 text-sm font-mono text-white outline-none">
+              </div>
+            </div>
+
+            <div id="azimuth-note" class="mt-3 px-3 py-2 rounded-lg bg-emerald-950/40 border border-emerald-800/50 text-xs text-emerald-300 flex items-center gap-2">
+              <i class="fa-solid fa-circle-info text-emerald-400"></i>
+              <span>Como β ≤ 15°, según criterio técnico no se aplica penalización por acimut en el factor ΔFI.</span>
+            </div>
+          </div>
+
+          <!-- BLOQUE B: PÉRDIDAS DE LA INSTALACIÓN -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-slate-800 pb-3 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-sliders"></i> B. Parámetros de Pérdidas del Sistema
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Tª Media Célula (°C)</label>
+                <input type="number" id="tCell" value="50" step="1" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Tª Óptima STC (°C)</label>
+                <input type="number" id="tOpt" value="25" step="1" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Coef. Pérdida Pmax (%/°C)</label>
+                <input type="number" id="coefPmax" value="0.35" step="0.01" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Pérdidas Suciedad (%)</label>
+                <input type="number" id="suciedad" value="5" step="0.5" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Rendimiento Inversor (%)</label>
+                <input type="number" id="rendInversor" value="97.0" step="0.1" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Pérdidas Cableado (%)</label>
+                <input type="number" id="perdCableado" value="1.5" step="0.1" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div class="col-span-2 sm:col-span-3">
+                <label class="block text-xs text-slate-300 mb-1">Eficiencia del Módulo Fotovoltaico η_panel (%)</label>
+                <input type="number" id="rendPanel" value="20.2" step="0.1" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-amber-300 font-bold">
+              </div>
+            </div>
+          </div>
+
+          <!-- BLOQUE C: DATOS DEL PANEL FV Y TENSIÓN DE CADENA -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-slate-800 pb-3 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-solar-panel"></i> C. Ficha Técnica del Panel y Seguridad Eléctrica
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Alto Panel (m)</label>
+                <input type="number" id="altoPanel" value="2.094" step="0.001" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Ancho Panel (m)</label>
+                <input type="number" id="anchoPanel" value="1.030" step="0.001" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Potencia Unitaria (Wp)</label>
+                <input type="number" id="potPanel" value="450" step="5" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-amber-400 font-bold">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Tensión Voc STC (V)</label>
+                <input type="number" id="vocPanel" value="49.70" step="0.01" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Tensión Vmp STC (V)</label>
+                <input type="number" id="vmpPanel" value="41.52" step="0.01" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Tª Mínima Zona (°C)</label>
+                <input type="number" id="tMinZona" value="-5" step="1" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-cyan-300">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Coef. Temp. Voc (%/°C)</label>
+                <input type="number" id="coefVoc" value="0.272" step="0.001" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Degradación 1er Año (%)</label>
+                <input type="number" id="degYear1" value="2.0" step="0.1" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Degradación Anual (%)</label>
+                <input type="number" id="degAnnual" value="0.45" step="0.05" oninput="recalculateAll()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: RESULTADOS DEL EXCEL Y CONFIGURACIÓN FINAL (5 columnas) -->
+        <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-28">
+          
+          <!-- TARJETA PRINCIPAL DE DECISIÓN DE OBRA -->
+          <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/40 rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-amber-400">Dimensionamiento Final de Obra</span>
+              <span id="badge-panels-auto" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">Teórico: 9,22 uds</span>
+            </div>
+
+            <!-- Selector interactivo de número de paneles elegido -->
+            <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4 flex items-center justify-between">
+              <div>
+                <label class="block text-xs font-bold text-slate-300">Nº Paneles a Instalar (NP)</label>
+                <span class="text-[11px] text-slate-400">Ajustable según espacio en cubierta</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="adjustPanels(-1)" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-lg flex items-center justify-center border border-slate-600 transition">-</button>
+                <input type="number" id="numPanelsChosen" value="10" min="1" max="100" oninput="recalculateFinalSystem()" class="w-16 text-center bg-slate-950 border border-amber-400 rounded-lg py-1.5 text-xl font-mono font-extrabold text-amber-400">
+                <button onclick="adjustPanels(1)" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-lg flex items-center justify-center border border-slate-600 transition">+</button>
+              </div>
+            </div>
+
+            <!-- 4 KPIs Principales -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+                <span class="text-[11px] text-slate-400 block">Potencia Pico Campo</span>
+                <span id="res-kwp" class="text-xl font-mono font-extrabold text-white">4,50 kWp</span>
+                <span id="res-wp" class="text-[11px] font-mono text-slate-400 block">4.500 Wp</span>
+              </div>
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+                <span class="text-[11px] text-slate-400 block">Generación Anual Final</span>
+                <span id="res-gen-final" class="text-xl font-mono font-extrabold text-emerald-400">7.354 kWh</span>
+                <span id="res-cov-pct" class="text-[11px] font-mono text-emerald-300/80 block">135,6% del consumo</span>
+              </div>
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+                <span class="text-[11px] text-slate-400 block">Superficie Real Ocupada</span>
+                <span id="res-area-real" class="text-lg font-mono font-bold text-slate-100">21,57 m²</span>
+                <span id="res-area-req" class="text-[11px] font-mono text-slate-400 block">Mín. req: 19,88 m²</span>
+              </div>
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+                <span class="text-[11px] text-slate-400 block">Inversor Recomendado</span>
+                <span id="res-inverter" class="text-sm font-bold text-amber-300 block mt-0.5">4,0 - 4,5 kW (1F)</span>
+                <span id="res-dc-ac" class="text-[11px] font-mono text-slate-400 block">Ratio DC/AC: 1,13</span>
+              </div>
+            </div>
+
+            <!-- VERIFICACIÓN DE CADENAS (STRINGS) Y TENSIÓN MÁXIMA A Tª MÍNIMA -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <i class="fa-solid fa-bolt text-amber-400"></i> Verificación Eléctrica Strings
+                </span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] text-slate-400">Cadenas:</span>
+                  <select id="numStrings" onchange="recalculateFinalSystem()" class="bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-xs font-mono text-white">
+                    <option value="1" selected>1 String (Serie)</option>
+                    <option value="2">2 Strings (2 MPPT)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+                  <span class="text-[10px] text-slate-400 block">Vmp Trabajo</span>
+                  <span id="res-vmp-string" class="text-xs font-mono font-bold text-slate-200">415,2 V</span>
+                </div>
+                <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+                  <span class="text-[10px] text-slate-400 block">Voc a 25°C</span>
+                  <span id="res-voc-25" class="text-xs font-mono font-bold text-slate-200">497,0 V</span>
+                </div>
+                <div id="box-voc-min" class="bg-slate-950 p-2 rounded-lg border border-emerald-500/40">
+                  <span class="text-[10px] text-slate-400 block">Voc Tª Mínima</span>
+                  <span id="res-voc-min" class="text-xs font-mono font-extrabold text-emerald-400">537,6 V</span>
+                </div>
+              </div>
+
+              <div id="string-alert" class="text-[11px] px-2.5 py-1.5 rounded bg-emerald-950/50 border border-emerald-800/60 text-emerald-300">
+                <i class="fa-solid fa-check-circle mr-1"></i> Tensión segura (&lt; 600V máx. inversor residencial).
+              </div>
+            </div>
+          </div>
+
+          <!-- DESGLOSE DETALLADO DE CÁLCULOS INTERMEDIOS (TABLA EXCEL) -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center justify-between">
+              <span>Desglose de Fórmulas Excel</span>
+              <span class="font-mono text-amber-400">η Total: <strong id="res-eta-total">16,27%</strong></span>
+            </h3>
+            <div class="space-y-1.5 text-xs font-mono">
+              <div class="flex justify-between py-1 border-b border-slate-800/70">
+                <span class="text-slate-400 font-sans">Energía Secundaria (125% Cons.):</span>
+                <span id="res-es" class="text-white">6.780 kWh/año</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-slate-800/70">
+                <span class="text-slate-400 font-sans">Ángulo Óptimo (βopt):</span>
+                <span id="res-beta-opt" class="text-white">30,02°</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-slate-800/70">
+                <span class="text-slate-400 font-sans">Factor Irradiación (ΔFI):</span>
+                <span id="res-dfi" class="text-slate-200">0,9729</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-slate-800/70">
+                <span class="text-slate-400 font-sans">Pérdidas Temp. (ΔtMPP):</span>
+                <span id="res-dtmpp" class="text-slate-200">0,9125</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-slate-800/70">
+                <span class="text-slate-400 font-sans">Suciedad (ΔS) · Inv (ΔINV) · Cab (ΔE):</span>
+                <span id="res-other-losses" class="text-slate-200">0,95 · 0,97 · 0,985</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-slate-800/70">
+                <span class="text-slate-400 font-sans">Energía Primaria Necesaria (Ep):</span>
+                <span id="res-ep" class="text-amber-300">41.672 kWh/año</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-slate-400 font-sans">Irradiación Óptima Gd(Opt) / Anual:</span>
+                <span id="res-gd-opt" class="text-slate-200">5,74 / 2.096 kWh/m²</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- PROYECCIÓN DE DEGRADACIÓN A 30 AÑOS (TABLA EXCEL FILAS 27-58) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-amber-400">Proyección de Degradación Lineal del Campo FV (30 Años)</h3>
+            <p class="text-xs text-slate-400">Cálculo año a año según degradación inicial y tasa anual lineal de ficha técnica.</p>
+          </div>
+          <div class="flex gap-4 text-xs font-mono">
+            <span class="text-slate-300">Año 1: <strong id="deg-y1-val" class="text-emerald-400">4.410 W</strong></span>
+            <span class="text-slate-300">Año 15: <strong id="deg-y15-val" class="text-amber-300">4.127 W</strong></span>
+            <span class="text-slate-300">Año 30: <strong id="deg-y30-val" class="text-orange-400">3.823 W</strong></span>
+          </div>
+        </div>
+        <!-- Barras visuales de degradación -->
+        <div id="degradation-bars" class="grid grid-cols-15 sm:grid-cols-30 gap-1 h-28 items-end pt-4 pb-1 px-2 bg-slate-950 rounded-lg border border-slate-800 overflow-x-auto">
+          <!-- Generado por JS -->
+        </div>
+        <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1 px-1">
+          <span>Año 1</span>
+          <span>Año 10</span>
+          <span>Año 20</span>
+          <span>Año 30</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- PESTAÑA 2: NORMATIVA IDAE (PCT-C-REV) Y DISTANCIA ENTRE FILAS         -->
+    <!-- ===================================================================== -->
+    <section id="tab-idae" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Verificador Tabla I PCT IDAE (Orientación e Inclinación) -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-slate-800 pb-3 flex items-center gap-2">
+            <i class="fa-solid fa-scale-balanced"></i> 1. Límites de Pérdidas por Orientación e Inclinación (Tabla I IDAE)
+          </h2>
+          <p class="text-xs text-slate-400">Evaluación automática según los ángulos β y α introducidos en la pestaña Calculadora.</p>
+          
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-slate-400 block">Pérdida calculada (1 - ΔFI)</span>
+              <span id="idae-loss-pct" class="text-2xl font-mono font-extrabold text-amber-400">2,71%</span>
+            </div>
+            <div class="text-right text-xs font-mono text-slate-300">
+              <div>Inclinación β: <strong id="idae-beta-show">15°</strong></div>
+              <div>Acimut α: <strong id="idae-az-show">18°</strong></div>
+            </div>
+          </div>
+
+          <div class="space-y-2.5 text-xs">
+            <div id="idae-case-general" class="p-3 rounded-lg border flex items-center justify-between">
+              <div>
+                <strong class="block text-sm">Caso General (Estructura inclinada)</strong>
+                <span class="text-slate-400">Límite máximo permitido por PCT-C-REV: 10%</span>
+              </div>
+              <span class="font-mono font-bold px-2.5 py-1 rounded">CUMPLE</span>
+            </div>
+            <div id="idae-case-super" class="p-3 rounded-lg border flex items-center justify-between">
+              <div>
+                <strong class="block text-sm">Superposición Arquitectónica (Coplanar)</strong>
+                <span class="text-slate-400">Límite máximo permitido por PCT-C-REV: 20%</span>
+              </div>
+              <span class="font-mono font-bold px-2.5 py-1 rounded">CUMPLE</span>
+            </div>
+            <div id="idae-case-integ" class="p-3 rounded-lg border flex items-center justify-between">
+              <div>
+                <strong class="block text-sm">Integración Arquitectónica</strong>
+                <span class="text-slate-400">Límite máximo permitido por PCT-C-REV: 40%</span>
+              </div>
+              <span class="font-mono font-bold px-2.5 py-1 rounded">CUMPLE</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calculadora Distancia Mínima entre Filas (Anexo III IDAE) -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-slate-800 pb-3 flex items-center gap-2">
+            <i class="fa-solid fa-arrows-left-right-to-line"></i> 2. Distancia Mínima entre Filas / Obstáculos (Anexo III IDAE)
+          </h2>
+          <p class="text-xs text-slate-400">Garantiza al menos 4 horas de sol en torno al mediodía del solsticio de invierno: <code class="text-amber-300">d = h · k</code> donde <code class="text-amber-300">k = 1 / tan(61° - latitud)</code>.</p>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Altura obstáculo / desnivel h (m)</label>
+              <input type="number" id="shadow-h" value="0.65" step="0.05" oninput="calcRowDistance()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+              <span class="text-[10px] text-slate-500">Para panel inclinado: Alto · sin(β)</span>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Latitud aplicada (°)</label>
+              <input type="number" id="shadow-lat" value="38.14" step="0.1" oninput="calcRowDistance()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <div>
+              <span class="text-xs text-slate-400 block">Factor Adimensional (k)</span>
+              <span id="shadow-k" class="text-xl font-mono font-bold text-slate-200">2,371</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block">Distancia Mínima Horizontal (d)</span>
+              <span id="shadow-d" class="text-2xl font-mono font-extrabold text-amber-400">1,54 m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checklist Obligatorio de Recepción y Ejecución (PCT-C-REV) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-slate-800 pb-3 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-clipboard-check"></i> 3. Lista de Verificación Técnica en Obra (Pliego IDAE PCT-C-REV)
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <label class="flex items-start gap-2.5 p-3 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" checked class="mt-0.5 accent-amber-500">
+            <span><strong>Cableado CC Doble Aislamiento:</strong> Clase II, protección mínima IP65, positivos y negativos separados y protegidos (norma UNE 21123).</span>
+          </label>
+          <label class="flex items-start gap-2.5 p-3 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" checked class="mt-0.5 accent-amber-500">
+            <span><strong>Caída de Tensión Máxima:</strong> Sección de conductores de cobre calculada para que ΔV ≤ 1,5% en toda la instalación.</span>
+          </label>
+          <label class="flex items-start gap-2.5 p-3 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" checked class="mt-0.5 accent-amber-500">
+            <span><strong>Estructura Soporte y Tornillería:</strong> Tornillería en acero inoxidable (A2/A4), resistencia viento/nieve según CTE y puesta a tierra única.</span>
+          </label>
+          <label class="flex items-start gap-2.5 p-3 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" checked class="mt-0.5 accent-amber-500">
+            <span><strong>Inversor y Protección Anti-Isla:</strong> Certificación IEC 62116, corte automático ante fallo de red y grado IP65 si va en intemperie.</span>
+          </label>
+          <label class="flex items-start gap-2.5 p-3 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" class="mt-0.5 accent-amber-500">
+            <span><strong>Recepción Provisional (240 horas):</strong> Funcionamiento continuo verificado durante 240h sin fallos + entrega de manuales en castellano/lengua oficial.</span>
+          </label>
+          <label class="flex items-start gap-2.5 p-3 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" class="mt-0.5 accent-amber-500">
+            <span><strong>Garantías Mínimas Exigidas:</strong> Mínimo 3 años en instalación completa/inversor y 10 años producto (25 años rendimiento) en módulos.</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- PESTAÑA 3: DEDUCCIÓN FISCAL IRPF (40% AEAT / IVACE)                   -->
+    <!-- ===================================================================== -->
+    <section id="tab-irpf" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Formulario de datos económicos y certificados -->
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+          <div class="border-b border-slate-800 pb-3">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+              <i class="fa-solid fa-file-invoice-dollar"></i> Calculadora Deducción Obras Mejora Eficiencia Energética (AEAT)
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Deducción del 40% en el IRPF por reducción del consumo de energía primaria no renovable (plazo obras hasta 31/12/2026).</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Presupuesto / Coste Obra Satisfecho (€)</label>
+              <input type="number" id="irpf-cost" value="6800" step="100" oninput="calcIRPF()" class="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-lg px-3 py-2 text-base font-mono font-bold text-white outline-none">
+              <span class="text-[11px] text-slate-500">Base máxima deducible: 7.500,00 €</span>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Subvenciones Públicas Percibidas (€)</label>
+              <input type="number" id="irpf-subsidy" value="0" step="100" oninput="calcIRPF()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-base font-mono text-slate-200 outline-none">
+              <span class="text-[11px] text-slate-500">Se descuentan de la base según normativa AEAT</span>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Calificación CEE Previa (Antes obra)</label>
+              <select id="irpf-cee-before" onchange="calcIRPF()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                <option value="G">Letra G</option>
+                <option value="F">Letra F</option>
+                <option value="E">Letra E</option>
+                <option value="D" selected>Letra D (Ejemplo IVACE 16/07/2024)</option>
+                <option value="C">Letra C</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Calificación CEE Posterior (Tras obra)</label>
+              <select id="irpf-cee-after" onchange="calcIRPF()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-emerald-400">
+                <option value="A" selected>Letra A (Ejemplo IVACE 02/09/2024)</option>
+                <option value="B">Letra B</option>
+                <option value="C">Letra C (Requiere ≥30% ahorro EP no renovable)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Consumo EP No Renovable Antes (kWh/m²·año)</label>
+              <input type="number" id="irpf-ep-before" value="135" step="1" oninput="calcIRPF()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Consumo EP No Renovable Después (kWh/m²·año)</label>
+              <input type="number" id="irpf-ep-after" value="0" step="1" oninput="calcIRPF()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white">
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-lg bg-slate-950 border border-slate-800 text-xs space-y-1.5 text-slate-300">
+            <div class="font-bold text-amber-400"><i class="fa-solid fa-circle-exclamation mr-1"></i> Recordatorio de Requisitos Legales (AEAT):</div>
+            <ul class="list-disc pl-4 space-y-1 text-slate-400">
+              <li>Vivienda habitual o arrendada (o en expectativa de alquiler antes de 31/12/2027).</li>
+              <li>Pago mediante tarjeta, transferencia bancaria, cheque nominativo o ingreso en cuenta (nunca en metálico).</li>
+              <li>Certificado de Eficiencia Energética posterior expedido antes del <strong>1 de enero de 2027</strong>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Resultado Económico para Argumentario Comercial -->
+        <div class="lg:col-span-5 bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-emerald-500/40 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Estudio Fiscal para Cliente</span>
+              <span id="irpf-status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">APTO DEDUCCIÓN 40%</span>
+            </div>
+
+            <div class="space-y-3">
+              <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 flex justify-between items-center">
+                <span class="text-xs text-slate-400">Reducción EP No Renovable:</span>
+                <span id="irpf-red-pct" class="text-base font-mono font-bold text-emerald-400">100,0% (Clase D → A)</span>
+              </div>
+
+              <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 flex justify-between items-center">
+                <span class="text-xs text-slate-400">Base Deducible Aplicable (Máx. 7.500€):</span>
+                <span id="irpf-base-val" class="text-base font-mono font-bold text-white">6.800,00 €</span>
+              </div>
+
+              <div class="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-4">
+                <span class="text-xs text-emerald-300 block">Ahorro Directo en Declaración IRPF (40%):</span>
+                <span id="irpf-deduction-val" class="text-3xl font-mono font-extrabold text-emerald-400">2.720,00 €</span>
+              </div>
+
+              <div class="bg-slate-900 border border-amber-500/30 rounded-xl p-4">
+                <span class="text-xs text-slate-300 block">Coste Neto Real tras Deducción IRPF:</span>
+                <span id="irpf-net-cost" class="text-2xl font-mono font-extrabold text-amber-400">4.080,00 €</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- PESTAÑA 4: OBRAS GUARDADAS E INFORME TÉCNICO-COMERCIAL                -->
+    <!-- ===================================================================== -->
+    <section id="tab-report" class="tab-content hidden space-y-6">
+      
+      <!-- Lista de Obras Guardadas -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 no-print">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+            <i class="fa-solid fa-folder-tree"></i> Historial de Obras y Presupuestos Guardados
+          </h2>
+          <button onclick="openSaveModal()" class="text-xs px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition">
+            + Guardar Obra Actual
+          </button>
+        </div>
+        <div id="saved-projects-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <!-- Renderizado dinámico desde localStorage -->
+        </div>
+      </div>
+
+      <!-- Vista Previa del Informe Técnico-Comercial Imprimible -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 print-card space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700 pb-4">
+          <div>
+            <span class="text-xs font-mono uppercase tracking-wider text-amber-500 font-bold">Memoria Técnica de Dimensionamiento FV</span>
+            <h2 id="rep-title" class="text-xl font-extrabold text-white print-text-dark">Estudio de Autoconsumo Fotovoltaico Conectado a Red</h2>
+            <p id="rep-subtitle" class="text-xs text-slate-400">Generado con SolarFlow Pro · Conforme a PCT-C-REV IDAE</p>
+          </div>
+          <button onclick="window.print()" class="no-print px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm flex items-center gap-2 shadow-lg transition">
+            <i class="fa-solid fa-print"></i> Imprimir / Guardar PDF
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 print-card">
+            <span class="text-[11px] text-slate-400 block">Generador FV</span>
+            <strong id="rep-panels" class="text-base font-mono text-white print-text-dark">10 x 450 Wp</strong>
+            <span id="rep-kwp" class="text-xs font-mono text-amber-400 block">4,50 kWp Total</span>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 print-card">
+            <span class="text-[11px] text-slate-400 block">Producción Anual Est.</span>
+            <strong id="rep-gen" class="text-base font-mono text-emerald-400 print-text-dark">7.354 kWh/año</strong>
+            <span id="rep-cons" class="text-xs font-mono text-slate-400 block">Consumo: 5.424 kWh</span>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 print-card">
+            <span class="text-[11px] text-slate-400 block">Rendimiento Sistema</span>
+            <strong id="rep-eta" class="text-base font-mono text-white print-text-dark">16,27%</strong>
+            <span id="rep-area" class="text-xs font-mono text-slate-400 block">Sup: 21,57 m²</span>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 print-card">
+            <span class="text-[11px] text-slate-400 block">Ahorro Fiscal IRPF</span>
+            <strong id="rep-irpf" class="text-base font-mono text-emerald-400 print-text-dark">2.720,00 €</strong>
+            <span id="rep-net" class="text-xs font-mono text-slate-400 block">Neto: 4.080,00 €</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+          <div class="space-y-2">
+            <h3 class="font-bold uppercase text-amber-400 print-text-dark border-b border-slate-800 pb-1">Parámetros de Ubicación y Diseño</h3>
+            <div class="flex justify-between"><span>Latitud / Inclinación β / Acimut α:</span> <strong id="rep-geo" class="font-mono">38,143° / 15° / 18°</strong></div>
+            <div class="flex justify-between"><span>Ángulo Óptimo Teórico (βopt):</span> <strong id="rep-bopt" class="font-mono">30,02°</strong></div>
+            <div class="flex justify-between"><span>Energía Secundaria / Primaria:</span> <strong id="rep-es-ep" class="font-mono">6.780 / 41.672 kWh</strong></div>
+            <div class="flex justify-between"><span>Configuración Eléctrica Strings:</span> <strong id="rep-strings" class="font-mono">1 string (Voc mín: 537,6 V)</strong></div>
+          </div>
+          <div class="space-y-2">
+            <h3 class="font-bold uppercase text-amber-400 print-text-dark border-b border-slate-800 pb-1">Cumplimiento Normativo y Fiscal</h3>
+            <div class="flex justify-between"><span>Normativa Técnica Aplicada:</span> <strong>IDAE PCT-C-REV / REBT</strong></div>
+            <div class="flex justify-between"><span>Calificación Energética CEE:</span> <strong id="rep-cee">Clase D → Clase A</strong></div>
+            <div class="flex justify-between"><span>Presupuesto Obra / Base Deducible:</span> <strong id="rep-budget" class="font-mono">6.800 € / 6.800 €</strong></div>
+            <div class="flex justify-between"><span>Deducción IRPF (40% AEAT):</span> <strong id="rep-ded-detail" class="font-mono text-emerald-400 print-text-dark">2.720,00 €</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL PARA GUARDAR OBRA -->
+  <div id="save-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white">Guardar Proyecto / Visita de Obra</h3>
+        <button onclick="closeSaveModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Nombre del Cliente / Referencia Obra</label>
+          <input type="text" id="proj-name" placeholder="Ej. Vivienda Unifamiliar Elche - Sr. Martínez" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Localidad / Dirección</label>
+          <input type="text" id="proj-city" placeholder="Ej. Elche (Alicante)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Notas de visita (cubierta, inversor, sombras)</label>
+          <textarea id="proj-notes" rows="2" placeholder="Ej. Cubierta inclinada teja, estructura coplanar, inversor en garaje." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeSaveModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold">Cancelar</button>
+        <button onclick="saveCurrentProject()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">Guardar en Historial</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICACIÓN TOAST -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 border border-amber-500/50 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-semibold hidden items-center gap-2 z-50">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-msg">Operación completada</span>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- LÓGICA DE CÁLCULO EXACTA Y GESTIÓN DE ESTADO                          -->
+  <!-- ===================================================================== -->
+  <script>
+    // Presets técnicos extraídos de los manuales adjuntos
+    const PRESETS = {
+      jasolar: {
+        consumoAnual: 5424,
+        latDeg: 38, latMin: 8, latSec: 34.3,
+        beta: 15, acimut: 18, gd0: 5.05,
+        tCell: 50, tOpt: 25, coefPmax: 0.35,
+        suciedad: 5, rendInversor: 97.0, perdCableado: 1.5, rendPanel: 20.2,
+        altoPanel: 2.094, anchoPanel: 1.030, potPanel: 450,
+        vocPanel: 49.70, vmpPanel: 41.52, tMinZona: -5, coefVoc: 0.272,
+        degYear1: 2.0, degAnnual: 0.45, numStrings: 1
+      },
+      aiko: {
+        consumoAnual: 8448,
+        latDeg: 38, latMin: 16, latSec: 1.0,
+        beta: 20, acimut: -10, gd0: 5.05,
+        tCell: 50, tOpt: 25, coefPmax: 0.26,
+        suciedad: 3, rendInversor: 97.9, perdCableado: 1.5, rendPanel: 24.0,
+        altoPanel: 2.278, anchoPanel: 1.134, potPanel: 620,
+        vocPanel: 54.39, vmpPanel: 45.08, tMinZona: -5, coefVoc: 0.220,
+        degYear1: 1.0, degAnnual: 0.35, numStrings: 2
+      }
+    };
+
+    let calcState = {};
+
+    function applyPreset(key) {
+      const p = PRESETS[key];
+      if (!p) return;
+      Object.keys(p).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = p[id];
+      });
+      recalculateAll(true);
+      showToast(`Cargado perfil técnico: ${key === 'jasolar' ? 'JA Solar 450W' : 'Aiko 620W Tipo N ABC'}`);
+    }
+
+    function selectCityRadiation() {
+      const val = document.getElementById('citySelector').value;
+      document.getElementById('gd0').value = val;
+      recalculateAll();
+    }
+
+    function toggleInvoiceHelper() {
+      document.getElementById('invoice-helper').classList.toggle('hidden');
+      calcFromInvoices();
+    }
+
+    function calcFromInvoices() {
+      const p1 = parseFloat(document.getElementById('inv-p1').value) || 0;
+      const p2 = parseFloat(document.getElementById('inv-p2').value) || 0;
+      const p3 = parseFloat(document.getElementById('inv-p3').value) || 0;
+      const m = Math.max(1, Math.min(12, parseFloat(document.getElementById('inv-months').value) || 12));
+      const sum = p1 + p2 + p3;
+      const annual = Math.round((sum / m) * 12);
+      document.getElementById('inv-sum').textContent = sum.toLocaleString('es-ES') + ' kWh';
+      document.getElementById('inv-annual').textContent = annual.toLocaleString('es-ES') + ' kWh';
+      return annual;
+    }
+
+    function applyInvoiceToMain() {
+      const annual = calcFromInvoices();
+      document.getElementById('consumoAnual').value = annual;
+      document.getElementById('invoice-helper').classList.add('hidden');
+      recalculateAll(true);
+      showToast(`Consumo anual actualizado a ${annual.toLocaleString('es-ES')} kWh`);
+    }
+
+    // Cálculo principal siguiendo exactamente las fórmulas del Excel
+    function recalculateAll(autoSetPanels = false) {
+      const consumoAnual = parseFloat(document.getElementById('consumoAnual').value) || 0;
+      const latDeg = parseFloat(document.getElementById('latDeg').value) || 0;
+      const latMin = parseFloat(document.getElementById('latMin').value) || 0;
+      const latSec = parseFloat(document.getElementById('latSec').value) || 0;
+      const beta = parseFloat(document.getElementById('beta').value) || 0;
+      const acimut = parseFloat(document.getElementById('acimut').value) || 0;
+      const gd0 = parseFloat(document.getElementById('gd0').value) || 5.05;
+
+      const tCell = parseFloat(document.getElementById('tCell').value) || 50;
+      const tOpt = parseFloat(document.getElementById('tOpt').value) || 25;
+      const coefPmax = parseFloat(document.getElementById('coefPmax').value) || 0;
+      const suciedad = parseFloat(document.getElementById('suciedad').value) || 0;
+      const rendInversor = parseFloat(document.getElementById('rendInversor').value) || 97;
+      const perdCableado = parseFloat(document.getElementById('perdCableado').value) || 1.5;
+      const rendPanel = parseFloat(document.getElementById('rendPanel').value) || 20;
+
+      const altoPanel = parseFloat(document.getElementById('altoPanel').value) || 2.0;
+      const anchoPanel = parseFloat(document.getElementById('anchoPanel').value) || 1.0;
+
+      // 1. Latitud decimal
+      const latDec = Math.abs(latDeg) + (latMin / 60) + (latSec / 3600);
+      document.getElementById('latDecimalDisplay').textContent = latDec.toFixed(3).replace('.', ',') + '°';
+
+      // 2. Energía Secundaria (125% del consumo para 80% autoconsumo)
+      const es = consumoAnual * 1.25;
+
+      // 3. Ángulo óptimo βopt
+      const betaOpt = 3.7 + 0.69 * latDec;
+
+      // 4. Factor de Irradiación (ΔFI) - Regla Excel: si beta <= 15°, sin penalización por acimut
+      let deltaFI = 1;
+      const azNote = document.getElementById('azimuth-note');
+      if (beta <= 15) {
+        deltaFI = 1 - (1.2e-4 * Math.pow(beta - betaOpt, 2));
+        azNote.className = "mt-3 px-3 py-2 rounded-lg bg-emerald-950/40 border border-emerald-800/50 text-xs text-emerald-300 flex items-center gap-2";
+        azNote.innerHTML = `<i class="fa-solid fa-circle-info text-emerald-400"></i><span>Inclinación β=${beta}° (≤ 15°): No se penaliza acimut en ΔFI.</span>`;
+      } else {
+        deltaFI = 1 - (1.2e-4 * Math.pow(beta - betaOpt, 2) + 3.5e-5 * Math.pow(acimut, 2));
+        azNote.className = "mt-3 px-3 py-2 rounded-lg bg-amber-950/40 border border-amber-800/50 text-xs text-amber-300 flex items-center gap-2";
+        azNote.innerHTML = `<i class="fa-solid fa-compass text-amber-400"></i><span>Inclinación β=${beta}° (&gt; 15°): Se aplica corrección por acimut α=${acimut}°.</span>`;
+      }
+      deltaFI = Math.max(0.01, deltaFI);
+
+      // 5. Resto de rendimientos parciales
+      const deltaTemp = 1 - ((tCell - tOpt) * (coefPmax / 100));
+      const deltaSuc = 1 - (suciedad / 100);
+      const deltaInv = rendInversor / 100;
+      const deltaCab = 1 - (perdCableado / 100);
+      const deltaPlaca = rendPanel / 100;
+
+      // 6. Rendimiento Total del Sistema
+      const etaTotal = deltaFI * deltaTemp * deltaSuc * deltaInv * deltaCab * deltaPlaca;
+
+      // 7. Energía Primaria Necesaria (Ep)
+      const ep = etaTotal > 0 ? (es / etaTotal) : 0;
+
+      // 8. Irradiación en condiciones óptimas Gd(Opt) y anual Ga(βopt)
+      const denomOpt = 1 - (4.46e-4 * betaOpt) - (1.19e-4 * Math.pow(betaOpt, 2));
+      const gdOpt = denomOpt > 0 ? (gd0 / denomOpt) : gd0;
+      const gaOpt = gdOpt * 365;
+
+      // 9. Superficie Total Necesaria (ST) y Número de Paneles Teórico (NP)
+      const st = gaOpt > 0 ? (ep / gaOpt) : 0;
+      const sp = altoPanel * anchoPanel;
+      const npTeorico = sp > 0 ? (st / sp) : 0;
+      const npCeil = Math.max(1, Math.ceil(npTeorico));
+
+      if (autoSetPanels) {
+        document.getElementById('numPanelsChosen').value = npCeil;
+      }
+
+      calcState = {
+        consumoAnual, latDec, beta, acimut, gd0, es, betaOpt,
+        deltaFI, deltaTemp, deltaSuc, deltaInv, deltaCab, deltaPlaca,
+        etaTotal, ep, gdOpt, gaOpt, st, sp, npTeorico, npCeil
+      };
+
+      // Actualizar UI de fórmulas intermedias
+      document.getElementById('badge-panels-auto').textContent = `Teórico: ${npTeorico.toFixed(2).replace('.', ',')} uds`;
+      document.getElementById('res-eta-total').textContent = (etaTotal * 100).toFixed(2).replace('.', ',') + '%';
+      document.getElementById('res-es').textContent = Math.round(es).toLocaleString('es-ES') + ' kWh/año';
+      document.getElementById('res-beta-opt').textContent = betaOpt.toFixed(2).replace('.', ',') + '°';
+      document.getElementById('res-dfi').textContent = deltaFI.toFixed(4).replace('.', ',');
+      document.getElementById('res-dtmpp').textContent = deltaTemp.toFixed(4).replace('.', ',');
+      document.getElementById('res-other-losses').textContent = `${deltaSuc.toFixed(2)} · ${deltaInv.toFixed(3)} · ${deltaCab.toFixed(3)}`;
+      document.getElementById('res-ep').textContent = Math.round(ep).toLocaleString('es-ES') + ' kWh/año';
+      document.getElementById('res-gd-opt').textContent = `${gdOpt.toFixed(2)} / ${Math.round(gaOpt).toLocaleString('es-ES')} kWh/m²`;
+
+      // Sincronizar latitud y altura en pestaña IDAE
+      document.getElementById('shadow-lat').value = latDec.toFixed(2);
+      const rowHeight = altoPanel * Math.sin((beta * Math.PI) / 180);
+      if (rowHeight > 0.05) {
+        document.getElementById('shadow-h').value = rowHeight.toFixed(2);
+      }
+
+      recalculateFinalSystem();
+      updateIDAETab();
+    }
+
+    function adjustPanels(delta) {
+      const inp = document.getElementById('numPanelsChosen');
+      const next = Math.max(1, (parseInt(inp.value) || 1) + delta);
+      inp.value = next;
+      recalculateFinalSystem();
+    }
+
+    // Recálculo final con el número entero de paneles elegido por el técnico
+    function recalculateFinalSystem() {
+      const npElegido = Math.max(1, parseInt(document.getElementById('numPanelsChosen').value) || 1);
+      const potPanel = parseFloat(document.getElementById('potPanel').value) || 450;
+      const vocPanel = parseFloat(document.getElementById('vocPanel').value) || 49.7;
+      const vmpPanel = parseFloat(document.getElementById('vmpPanel').value) || 41.52;
+      const tOpt = parseFloat(document.getElementById('tOpt').value) || 25;
+      const tMinZona = parseFloat(document.getElementById('tMinZona').value) || -5;
+      const coefVoc = parseFloat(document.getElementById('coefVoc').value) || 0.272;
+      const degYear1 = parseFloat(document.getElementById('degYear1').value) || 2.0;
+      const degAnnual = parseFloat(document.getElementById('degAnnual').value) || 0.45;
+      const numStrings = parseInt(document.getElementById('numStrings').value) || 1;
+
+      const potTotalW = npElegido * potPanel;
+      const potTotalKwp = potTotalW / 1000;
+      const areaReal = npElegido * (calcState.sp || 2.157);
+      const genFinal = calcState.npTeorico > 0 ? (calcState.es * npElegido) / calcState.npTeorico : 0;
+      const covPct = calcState.consumoAnual > 0 ? (genFinal / calcState.consumoAnual) * 100 : 0;
+
+      // Recomendación inversor (ratio DC/AC ~ 1.15)
+      const invRecKw = (potTotalKwp / 1.15);
+      const dcAcRatio = invRecKw > 0 ? (potTotalKwp / Math.max(1.5, Math.round(invRecKw * 2) / 2)) : 1;
+
+      document.getElementById('res-kwp').textContent = potTotalKwp.toFixed(2).replace('.', ',') + ' kWp';
+      document.getElementById('res-wp').textContent = potTotalW.toLocaleString('es-ES') + ' Wp';
+      document.getElementById('res-gen-final').textContent = Math.round(genFinal).toLocaleString('es-ES') + ' kWh';
+      document.getElementById('res-cov-pct').textContent = covPct.toFixed(1).replace('.', ',') + '% del consumo';
+      document.getElementById('res-area-real').textContent = areaReal.toFixed(2).replace('.', ',') + ' m²';
+      document.getElementById('res-area-req').textContent = `Mín. req: ${(calcState.st || 0).toFixed(2).replace('.', ',')} m²`;
+      document.getElementById('res-inverter').textContent = `${(Math.max(1.5, Math.round(invRecKw * 2) / 2)).toFixed(1).replace('.', ',')} kW (${potTotalKwp > 10 ? '3F' : '1F'})`;
+      document.getElementById('res-dc-ac').textContent = `Ratio DC/AC: ${dcAcRatio.toFixed(2).replace('.', ',')}`;
+
+      // Verificación Strings (Fórmula exacta Excel: Voc_min = Voc_25 + ((T_opt - T_min) * (Coef_Voc/100) * Voc_unit * N_serie))
+      const panelsPerString = Math.ceil(npElegido / numStrings);
+      const vmpString = panelsPerString * vmpPanel;
+      const voc25 = panelsPerString * vocPanel;
+      const vocMin = voc25 + ((tOpt - tMinZona) * (coefVoc / 100) * vocPanel * panelsPerString);
+
+      document.getElementById('res-vmp-string').textContent = vmpString.toFixed(1).replace('.', ',') + ' V';
+      document.getElementById('res-voc-25').textContent = voc25.toFixed(1).replace('.', ',') + ' V';
+      document.getElementById('res-voc-min').textContent = vocMin.toFixed(1).replace('.', ',') + ' V';
+
+      const boxVoc = document.getElementById('box-voc-min');
+      const strAlert = document.getElementById('string-alert');
+      if (vocMin > 600) {
+        boxVoc.className = "bg-rose-950/60 p-2 rounded-lg border border-rose-500";
+        document.getElementById('res-voc-min').className = "text-xs font-mono font-extrabold text-rose-400";
+        strAlert.className = "text-[11px] px-2.5 py-1.5 rounded bg-rose-950/70 border border-rose-700 text-rose-300";
+        strAlert.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> PELIGRO: Voc a ${tMinZona}°C (${vocMin.toFixed(0)}V) supera el límite de 600V. Divide en 2 strings.`;
+      } else if (vocMin > 550) {
+        boxVoc.className = "bg-amber-950/60 p-2 rounded-lg border border-amber-500";
+        document.getElementById('res-voc-min').className = "text-xs font-mono font-extrabold text-amber-400";
+        strAlert.className = "text-[11px] px-2.5 py-1.5 rounded bg-amber-950/60 border border-amber-700 text-amber-300";
+        strAlert.innerHTML = `<i class="fa-solid fa-circle-exclamation mr-1"></i> Precaución: Voc (${vocMin.toFixed(0)}V) cerca de 600V. Verifica máx. tensión del inversor.`;
+      } else {
+        boxVoc.className = "bg-slate-950 p-2 rounded-lg border border-emerald-500/40";
+        document.getElementById('res-voc-min').className = "text-xs font-mono font-extrabold text-emerald-400";
+        strAlert.className = "text-[11px] px-2.5 py-1.5 rounded bg-emerald-950/50 border border-emerald-800/60 text-emerald-300";
+        strAlert.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i> Tensión segura (${panelsPerString} paneles/string · Voc máx ${vocMin.toFixed(1)}V < 600V).`;
+      }
+
+      // Renderizar degradación a 30 años (igual que Excel filas 27-58)
+      renderDegradationChart(potTotalW, degYear1, degAnnual);
+
+      calcState.final = {
+        npElegido, potPanel, potTotalW, potTotalKwp, areaReal, genFinal, numStrings, panelsPerString, vocMin
+      };
+      updateReportPreview();
+    }
+
+    function renderDegradationChart(initialW, deg1, degAnnual) {
+      const container = document.getElementById('degradation-bars');
+      container.innerHTML = '';
+      let currentW = initialW;
+      for (let y = 1; y <= 30; y++) {
+        if (y === 1) {
+          currentW = initialW * (1 - deg1 / 100);
+        } else {
+          currentW = currentW * (1 - degAnnual / 100);
+        }
+        if (y === 1) document.getElementById('deg-y1-val').textContent = Math.round(currentW).toLocaleString('es-ES') + ' W';
+        if (y === 15) document.getElementById('deg-y15-val').textContent = Math.round(currentW).toLocaleString('es-ES') + ' W';
+        if (y === 30) document.getElementById('deg-y30-val').textContent = Math.round(currentW).toLocaleString('es-ES') + ' W';
+
+        const pct = initialW > 0 ? (currentW / initialW) * 100 : 100;
+        const barHeight = Math.max(20, (pct - 75) * 3.8); // Escala visual entre 75% y 100%
+        const bar = document.createElement('div');
+        bar.className = "bg-gradient-to-t from-amber-600 to-amber-400 hover:from-emerald-500 hover:to-emerald-300 rounded-t transition-all cursor-pointer min-w-[6px]";
+        bar.style.height = `${Math.min(100, barHeight)}%`;
+        bar.title = `Año ${y}: ${Math.round(currentW)} W (${pct.toFixed(2)}%)`;
+        container.appendChild(bar);
+      }
+    }
+
+    // Pestaña 2: Normativa IDAE
+    function updateIDAETab() {
+      const lossPct = Math.max(0, (1 - (calcState.deltaFI || 1)) * 100);
+      document.getElementById('idae-loss-pct').textContent = lossPct.toFixed(2).replace('.', ',') + '%';
+      document.getElementById('idae-beta-show').textContent = (calcState.beta || 0) + '°';
+      document.getElementById('idae-az-show').textContent = (calcState.acimut || 0) + '°';
+
+      setIdaeBadge('idae-case-general', lossPct <= 10);
+      setIdaeBadge('idae-case-super', lossPct <= 20);
+      setIdaeBadge('idae-case-integ', lossPct <= 40);
+      calcRowDistance();
+    }
+
+    function setIdaeBadge(id, ok) {
+      const el = document.getElementById(id);
+      const badge = el.querySelector('span.font-mono');
+      if (ok) {
+        el.className = "p-3 rounded-lg border border-emerald-800/60 bg-emerald-950/30 flex items-center justify-between";
+        badge.className = "font-mono font-bold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300";
+        badge.textContent = "CUMPLE";
+      } else {
+        el.className = "p-3 rounded-lg border border-rose-800/60 bg-rose-950/30 flex items-center justify-between";
+        badge.className = "font-mono font-bold px-2.5 py-1 rounded bg-rose-500/20 text-rose-300";
+        badge.textContent = "EXCEDE LÍMITE";
+      }
+    }
+
+    function calcRowDistance() {
+      const h = parseFloat(document.getElementById('shadow-h').value) || 0;
+      const lat = parseFloat(document.getElementById('shadow-lat').value) || 38.14;
+      const angleRad = ((61 - lat) * Math.PI) / 180;
+      const k = angleRad > 0 ? (1 / Math.tan(angleRad)) : 2.5;
+      const d = h * k;
+      document.getElementById('shadow-k').textContent = k.toFixed(3).replace('.', ',');
+      document.getElementById('shadow-d').textContent = d.toFixed(2).replace('.', ',') + ' m';
+    }
+
+    // Pestaña 3: Deducción IRPF
+    function calcIRPF() {
+      const cost = parseFloat(document.getElementById('irpf-cost').value) || 0;
+      const subsidy = parseFloat(document.getElementById('irpf-subsidy').value) || 0;
+      const ceeBefore = document.getElementById('irpf-cee-before').value;
+      const ceeAfter = document.getElementById('irpf-cee-after').value;
+      const epBefore = parseFloat(document.getElementById('irpf-ep-before').value) || 100;
+      const epAfter = parseFloat(document.getElementById('irpf-ep-after').value) || 0;
+
+      const redPct = epBefore > 0 ? ((epBefore - epAfter) / epBefore) * 100 : 0;
+      const isApto = (ceeAfter === 'A' || ceeAfter === 'B' || redPct >= 30);
+
+      const netEligible = Math.max(0, cost - subsidy);
+      const baseDeducible = isApto ? Math.min(7500, netEligible) : 0;
+      const deduction = baseDeducible * 0.40;
+      const finalNetCost = Math.max(0, netEligible - deduction);
+
+      const badge = document.getElementById('irpf-status-badge');
+      if (isApto) {
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+        badge.textContent = "APTO DEDUCCIÓN 40%";
+      } else {
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40";
+        badge.textContent = "NO CUMPLE REQUISITO CEE";
+      }
+
+      document.getElementById('irpf-red-pct').textContent = `${redPct.toFixed(1).replace('.', ',')}% (Clase ${ceeBefore} → ${ceeAfter})`;
+      document.getElementById('irpf-base-val').textContent = baseDeducible.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+      document.getElementById('irpf-deduction-val').textContent = deduction.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+      document.getElementById('irpf-net-cost').textContent = finalNetCost.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+
+      calcState.irpf = { cost, subsidy, ceeBefore, ceeAfter, baseDeducible, deduction, finalNetCost };
+      updateReportPreview();
+    }
+
+    // Actualizar vista previa del informe
+    function updateReportPreview() {
+      if (!calcState.final || !calcState.irpf) return;
+      const f = calcState.final;
+      const ir = calcState.irpf;
+
+      document.getElementById('rep-panels').textContent = `${f.npElegido} x ${f.potPanel} Wp`;
+      document.getElementById('rep-kwp').textContent = `${f.potTotalKwp.toFixed(2).replace('.', ',')} kWp Total`;
+      document.getElementById('rep-gen').textContent = `${Math.round(f.genFinal).toLocaleString('es-ES')} kWh/año`;
+      document.getElementById('rep-cons').textContent = `Consumo: ${Math.round(calcState.consumoAnual).toLocaleString('es-ES')} kWh`;
+      document.getElementById('rep-eta').textContent = `${(calcState.etaTotal * 100).toFixed(2).replace('.', ',')}%`;
+      document.getElementById('rep-area').textContent = `Sup: ${f.areaReal.toFixed(2).replace('.', ',')} m²`;
+      document.getElementById('rep-irpf').textContent = `${ir.deduction.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`;
+      document.getElementById('rep-net').textContent = `Neto: ${ir.finalNetCost.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`;
+
+      document.getElementById('rep-geo').textContent = `${calcState.latDec.toFixed(3)}° / ${calcState.beta}° / ${calcState.acimut}°`;
+      document.getElementById('rep-bopt').textContent = `${calcState.betaOpt.toFixed(2)}°`;
+      document.getElementById('rep-es-ep').textContent = `${Math.round(calcState.es).toLocaleString('es-ES')} / ${Math.round(calcState.ep).toLocaleString('es-ES')} kWh`;
+      document.getElementById('rep-strings').textContent = `${f.numStrings} string(s) · Voc mín: ${f.vocMin.toFixed(1)} V`;
+
+      document.getElementById('rep-cee').textContent = `Clase ${ir.ceeBefore} → Clase ${ir.ceeAfter}`;
+      document.getElementById('rep-budget').textContent = `${ir.cost.toLocaleString('es-ES')} € / ${ir.baseDeducible.toLocaleString('es-ES')} €`;
+      document.getElementById('rep-ded-detail').textContent = `${ir.deduction.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`;
+    }
+
+    // Navegación entre pestañas
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(tabId).classList.remove('hidden');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-amber-400', 'text-amber-400');
+        btn.classList.add('border-transparent', 'text-slate-400');
+      });
+      const activeBtn = document.getElementById('btn-' + tabId);
+      if (activeBtn) {
+        activeBtn.classList.remove('border-transparent', 'text-slate-400');
+        activeBtn.classList.add('border-amber-400', 'text-amber-400');
+      }
+    }
+
+    // Gestión de Proyectos en localStorage
+    function openSaveModal() {
+      document.getElementById('save-modal').classList.remove('hidden');
+    }
+    function closeSaveModal() {
+      document.getElementById('save-modal').classList.add('hidden');
+    }
+
+    function saveCurrentProject() {
+      const name = document.getElementById('proj-name').value.trim() || 'Obra sin título';
+      const city = document.getElementById('proj-city').value.trim() || 'Alicante / Elche';
+      const notes = document.getElementById('proj-notes').value.trim();
+
+      const inputIds = [
+        'consumoAnual', 'latDeg', 'latMin', 'latSec', 'beta', 'acimut', 'gd0',
+        'tCell', 'tOpt', 'coefPmax', 'suciedad', 'rendInversor', 'perdCableado', 'rendPanel',
+        'altoPanel', 'anchoPanel', 'potPanel', 'vocPanel', 'vmpPanel', 'tMinZona', 'coefVoc',
+        'degYear1', 'degAnnual', 'numPanelsChosen', 'numStrings',
+        'irpf-cost', 'irpf-subsidy', 'irpf-cee-before', 'irpf-cee-after', 'irpf-ep-before', 'irpf-ep-after'
+      ];
+      const data = {};
+      inputIds.forEach(id => { data[id] = document.getElementById(id).value; });
+
+      const projects = JSON.parse(localStorage.getItem('solarflow_projects') || '[]');
+      projects.unshift({
+        id: Date.now(),
+        date: new Date().toLocaleDateString('es-ES'),
+        name, city, notes,
+        summary: `${calcState.final.npElegido}x${calcState.final.potPanel}W (${calcState.final.potTotalKwp.toFixed(2)} kWp)`,
+        data
+      });
+      localStorage.setItem('solarflow_projects', JSON.stringify(projects));
+      closeSaveModal();
+      renderSavedProjects();
+      showToast('Obra guardada correctamente en el historial');
+    }
+
+    function loadProject(id) {
+      const projects = JSON.parse(localStorage.getItem('solarflow_projects') || '[]');
+      const proj = projects.find(p => p.id === id);
+      if (!proj) return;
+      Object.keys(proj.data).forEach(k => {
+        const el = document.getElementById(k);
+        if (el) el.value = proj.data[k];
+      });
+      document.getElementById('rep-title').textContent = proj.name;
+      document.getElementById('rep-subtitle').textContent = `${proj.city} · Fecha: ${proj.date} ${proj.notes ? '· ' + proj.notes : ''}`;
+      recalculateAll(false);
+      calcIRPF();
+      switchTab('tab-calc');
+      showToast(`Cargada obra: ${proj.name}`);
+    }
+
+    function deleteProject(id) {
+      let projects = JSON.parse(localStorage.getItem('solarflow_projects') || '[]');
+      projects = projects.filter(p => p.id !== id);
+      localStorage.setItem('solarflow_projects', JSON.stringify(projects));
+      renderSavedProjects();
+      showToast('Obra eliminada del historial');
+    }
+
+    function renderSavedProjects() {
+      const projects = JSON.parse(localStorage.getItem('solarflow_projects') || '[]');
+      document.getElementById('saved-count-badge').textContent = projects.length;
+      const list = document.getElementById('saved-projects-list');
+      if (projects.length === 0) {
+        list.innerHTML = `<div class="col-span-full text-center py-6 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">Aún no hay obras guardadas. Pulsa "+ Guardar Obra Actual" para archivar un presupuesto.</div>`;
+        return;
+      }
+      list.innerHTML = projects.map(p => `
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between gap-3">
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>${p.city}</span>
+              <span class="font-mono">${p.date}</span>
+            </div>
+            <h4 class="text-sm font-bold text-white">${p.name}</h4>
+            <span class="inline-block mt-1 text-xs font-mono text-amber-400">${p.summary}</span>
+            ${p.notes ? `<p class="text-[11px] text-slate-400 mt-1 line-clamp-2">${p.notes}</p>` : ''}
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+            <button onclick="loadProject(${p.id})" class="text-xs font-bold text-emerald-400 hover:text-emerald-300">Cargar en Calculadora</button>
+            <button onclick="deleteProject(${p.id})" class="text-xs text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      t.classList.remove('hidden');
+      t.classList.add('flex');
+      setTimeout(() => {
+        t.classList.add('hidden');
+        t.classList.remove('flex');
+      }, 3000);
+    }
+
+    // Inicialización al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      recalculateAll(true);
+      calcIRPF();
+      renderSavedProjects();
+    });
+  </script>
+</body>
+</html>
